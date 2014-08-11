@@ -30,7 +30,7 @@ public class RandomArray {
 		Random rand = new Random(System.currentTimeMillis());
 		Point fromp = new Point(), 
 			top = new Point();
-		int randomTime = (int) (r * c * 0.5);
+		int randomTime = (int) (r * c * 0.005);
 		System.out.print("Random time = " + randomTime);
 		for (int i = 0; i < randomTime; i++) {
 			fromp.setPosition(rand.nextInt(c), rand.nextInt(r));

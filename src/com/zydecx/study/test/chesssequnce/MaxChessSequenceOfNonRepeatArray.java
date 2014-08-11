@@ -6,15 +6,15 @@ import java.util.Set;
 import java.util.Stack;
 
 /**
- * this demo works for array in which two number could be the same, i.g.
- * 3 2 3
- * 2 1 4
+ * this demo works for array in which neither of two number are the same, i.g.
+ * 1 2 5
+ * 6 3 4
  * @author chuff
  *
  */
-public class MaxChessSequence {
+public class MaxChessSequenceOfNonRepeatArray {
 	public static void main(String[] args) {
-		new MaxChessSequence().runDemo();
+		new MaxChessSequenceOfNonRepeatArray().runDemo();
 	}
 	
 	public void runDemo() {
@@ -38,7 +38,8 @@ public class MaxChessSequence {
 		System.out.println("max path: ");
 //		printPath(ra, path, path.length);
 		System.out.println("\nrunning infomation: ");
-		System.out.printf("row = %d, column = %d, max sequence = %d, costing time %d ms\n", row, column, path.length, toTime - fromTime); 
+		System.out.printf("row = %d, column = %d, max sequence = %d, "
+				+ "costing time %d ms\n", row, column, path.length, toTime - fromTime); 
 	}
 	
 	private void printPath(RandomArray ra, Point[] path, int length) {
@@ -64,24 +65,38 @@ public class MaxChessSequence {
 				
 				Point p = new Point(j, i),
 						nextP;
-				PointBox pb = new PointBox(p, ra.get(p));
-				chessInfoMap.put(p, pb);
+				PointBox pb = chessInfoMap.get(p), 
+						nextPb;
+				if (pb == null) {
+					pb = new PointBox(p, ra.get(p));
+					chessInfoMap.put(p, pb);
+				}
 
-				nextP = Direction.UP.nextPoint(p, 0); 		pb.setAdjacentSeq(Direction.UP, nextP != null && ra.get(nextP) - ra.get(p) == 1 ? nextP : null);
-				nextP = Direction.DOWN.nextPoint(p, row - 1); 	pb.setAdjacentSeq(Direction.DOWN, nextP != null && ra.get(nextP) - ra.get(p) == 1 ? nextP : null);
-				nextP = Direction.LEFT.nextPoint(p, 0); 		pb.setAdjacentSeq(Direction.LEFT, nextP != null && ra.get(nextP) - ra.get(p) == 1 ? nextP : null);
-				nextP = Direction.RIGHT.nextPoint(p, column - 1);	pb.setAdjacentSeq(Direction.RIGHT, nextP != null && ra.get(nextP) - ra.get(p) == 1 ? nextP : null);
+				nextP = Direction.UP.nextPoint(p, 0); 		pb.setNext(Direction.UP, nextP != null && ra.get(nextP) - ra.get(p) == 1 ? nextP : null);
+				nextP = Direction.DOWN.nextPoint(p, row - 1); 	pb.setNext(Direction.DOWN, nextP != null && ra.get(nextP) - ra.get(p) == 1 ? nextP : null);
+				nextP = Direction.LEFT.nextPoint(p, 0); 		pb.setNext(Direction.LEFT, nextP != null && ra.get(nextP) - ra.get(p) == 1 ? nextP : null);
+				nextP = Direction.RIGHT.nextPoint(p, column - 1);	pb.setNext(Direction.RIGHT, nextP != null && ra.get(nextP) - ra.get(p) == 1 ? nextP : null);
+				
+				if (pb.hasAdjacent()) {
+					nextP = pb.getNextPoint();
+					nextPb = chessInfoMap.get(nextP);
+					if (nextPb == null) {
+						nextPb = new PointBox(nextP, ra.get(nextP));
+						chessInfoMap.put(nextP, nextPb);
+					}
+					pb.setNextPointBox(nextPb);
+				}
 			}
 		}
 		
 		
-		int max = -1;	// max length of path
-		Point maxPathStart = null;	// start point of longest path
-		PointBox stackPb;	// temporary variable for searching number sequence path starting from each point
-		Stack<PointNonius> pathStack = new Stack<>();	// temporaty variable for searching number sequence path starting from each point
+		int max = -1;	// size of max number sequence
+		Point maxPathStart = null;	// start point of max number sequence
+		PointBox stackPb;	// temporary variable for searching number sequence starting from each point
+		Stack<PointNonius> pathStack = new Stack<>();	// temporary variable for searching number sequence starting from each point
 		
 		/**
-		 * loop all points to get the longest sequence path
+		 * loop all points to get the max number sequence
 		 */
 		for (int i = 0; i < row; i++) {
 			for (int j = 0; j < column; j++) {
@@ -89,11 +104,17 @@ public class MaxChessSequence {
 				
 				Point p = new Point(j, i);
 				PointBox pb = chessInfoMap.get(p);
+				
 				int pointMax = pb.getMaxDepth();
 				/**
-				 * maxDepth of PointBox is -1 by default; otherwise, it's longest path has been calculated and could be compared with max directly
+				 * maxDepth of PointBox is -1 by default; 
+				 * otherwise, it's max number sequence has been calculated 
+				 * 			and the value could be compared with max directly
 				 */
-				if (pointMax <= 0) {
+				if (pointMax > 0 && pointMax > max) {
+					max = pointMax;
+					maxPathStart = p;
+				} else if (pointMax <= 0) {
 					/**
 					 * recursion of all the available number sequences starting from current point
 					 */
@@ -107,12 +128,14 @@ public class MaxChessSequence {
 						int tempMax = -1,
 								tempPointMax = -1;
 						/**
-						 * if a point doesn't have adjacent points(whose number's 1 bigger) or has been processes already, current path ends;
+						 * if a point doesn't have adjacent points(whose number's 1 bigger) 
+						 * 		or has been processes already, current number sequence ends;
 						 * else, put all adjacent points into the stack, and add depth by 1
 						 */
 						if (stackPb.getMaxDepth() > 0 || !stackPb.hasAdjacent()) {
 							/**
-							 * compare depth of current path with max so far, update it if here comes a bigger one
+							 * compare depth of current number sequence with max so far, 
+							 * 		update it if here comes a bigger one
 							 */
 							if (stackPb.getMaxDepth() > 0) {
 								tempPointMax = stackPb.getMaxDepth() + pn.depth - 1;
@@ -126,12 +149,13 @@ public class MaxChessSequence {
 							}
 							
 							/**
-							 * for point who doesn't have adjacent points, it's max number sequence is 1, and of course, has no direction for adjacent point
+							 * for point who doesn't have adjacent points, it's max number sequence is 1, 
+							 * 			and of course, has no direction for adjacent point
 							 */
-							pn.pointBox.setMax(null, 1, null, null);
+							pn.pointBox.setMaxDepth(1);
 							
 							/**
-							 * loop current path from end to start, update max number sequence of points in it;
+							 * loop current number sequence from end to start, update max number sequence of points in it;
 							 * so the next time when they're accessed, we don't have to calculate again
 							 */
 							PointNonius tempNextPn = pn;
@@ -141,21 +165,15 @@ public class MaxChessSequence {
 								
 								tempMax = tempPointMax - tempPn.depth + 1;
 								if (tempMax > tempPn.pointBox.getMaxDepth()) {
-									tempPn.pointBox.setMax(tempNextPn.direction, tempMax, null, tempNextPn.pointBox);
+									tempPn.pointBox.setMaxDepth(tempMax);
 								}
 								tempNextPn = tempPn;
 								tempPn = tempNextPn.prev;
 							}
 						} else {
-							for (Direction d : stackPb.getAllAdjacentSeq()) {
-								PointBox tempNextPb = chessInfoMap.get(stackPb.getAdjacentSeq(d));
-								pathStack.push(new PointNonius(tempNextPb, pn, null, d, pn.depth + 1));	// depth added by 1
-							}
+							pathStack.push(new PointNonius(stackPb.getNextPointBox(), pn, null, stackPb.getNextDirection(), pn.depth + 1));	// depth added by 1
 						}
 					}
-				} else if (pointMax > max) {
-					max = pointMax;
-					maxPathStart = p;
 				}
 			}
 		}
@@ -167,7 +185,8 @@ public class MaxChessSequence {
 	}
 	
 	/**
-	 * Direction - for each point in the chessboard, it has four adjacent point, with directions of UP, DOWN, LEFT and RIGHT
+	 * Direction - for each point in the chessboard, it has four adjacent point, 
+	 * 				with directions of UP, DOWN, LEFT and RIGHT
 	 * @author chuff
 	 *
 	 */
@@ -190,7 +209,8 @@ public class MaxChessSequence {
 		};
 		
 		/**
-		 * get the Point object of the adjacent point of p in current direction; return null if p locates at the border
+		 * get the Point object of the adjacent point of p in current direction; 
+		 * return null if p locates at the border
 		 * @param p
 		 * @param threshold - the threshold axis of current direction
 		 * @return 
@@ -207,56 +227,43 @@ public class MaxChessSequence {
 		private Point p;
 		private int value;
 		private int maxDepth;	// length of longest number sequence path from current point
-		private Direction maxDirection;	// direction to get the longest path
-		private PointBox maxNext;		// PointBox of maxDirection
-		private Map<Direction, Point> adjacentSeq;	// adjacent points which are 1 bigger than current point
-		private PointBox maxPrev;
+		private Direction nextDirection;// direction of the adjacent point whose value is 1 bigger than current point
+		private Point nextPoint;		// the adjacent point whose value is 1 bigger than current point
+		private PointBox nextPointBox;	// redundancy for more information of the adjacent point
 		
 		public PointBox(Point p, int value) {
 			this.p = p;
 			this.value = value;
 			this.maxDepth = -1;
-			this.adjacentSeq = new HashMap<>();
-			this.maxDirection = null;
-			this.maxPrev = null;
-			this.maxNext = null;
+			this.nextDirection = null;
+			this.nextPoint = null;
 		}
 		
-		public void setAdjacentSeq(Direction d, Point p) {
+		public void setNext(Direction d, Point p) {
 			if (p != null) {
-				this.adjacentSeq.put(d, p);
+				this.nextDirection = d;
+				this.nextPoint = p;
 			}
 		}
 		
-		public Point getAdjacentSeq(Direction d) {
-			return this.adjacentSeq.get(d);
+		public Point getNextPoint() {
+			return this.nextPoint;
 		}
 		
-		public Set<Direction> getAllAdjacentSeq() {
-			return (Set<Direction>) this.adjacentSeq.keySet();
+		public Direction getNextDirection() {
+			return this.nextDirection;
 		}
 		
 		public boolean hasAdjacent() {
-			return !this.adjacentSeq.isEmpty();
+			return !(this.nextDirection == null);
 		}
 		
 		public Point getPoint() {
 			return this.p;
 		}
-		
-		public void setMax(Direction direction, int depth, PointBox prev, PointBox next) {
-			this.maxDirection = direction;
-			this.maxDepth = depth;
-			this.maxPrev = prev;
-			this.maxNext = next;
-		}
 
 		public int getValue() {
 			return value;
-		}
-
-		public void setValue(int value) {
-			this.value = value;
 		}
 		
 		public int getMaxDepth() {
@@ -267,28 +274,12 @@ public class MaxChessSequence {
 			this.maxDepth = maxDepth;
 		}
 
-		public Direction getMaxDirection() {
-			return maxDirection;
+		public PointBox getNextPointBox() {
+			return nextPointBox;
 		}
 
-		public void setMaxDirection(Direction maxDirection) {
-			this.maxDirection = maxDirection;
-		}
-
-		public PointBox getMaxPrev() {
-			return maxPrev;
-		}
-
-		public void setMaxPrev(PointBox maxPrev) {
-			this.maxPrev = maxPrev;
-		}
-
-		public PointBox getMaxNext() {
-			return maxNext;
-		}
-
-		public void setMaxNext(PointBox maxNext) {
-			this.maxNext = maxNext;
+		public void setNextPointBox(PointBox nextPointBox) {
+			this.nextPointBox = nextPointBox;
 		}
 		
 		public Point[] getMaxPath() {
@@ -297,7 +288,7 @@ public class MaxChessSequence {
 			PointBox pb = this;
 			do {
 				path[i++] = pb.getPoint();
-				pb = pb.getMaxNext();
+				pb = pb.getNextPointBox();
 			} while (pb != null);
 
 			return path;
@@ -308,7 +299,7 @@ public class MaxChessSequence {
 			do {
 				if (pb != this) System.out.print(" ==>> ");
 				System.out.printf("r%dc%d : %d", pb.getPoint().getY() + 1, pb.getPoint().getX() + 1, pb.getValue());
-				pb = pb.getMaxNext();
+				pb = pb.getNextPointBox();
 			} while (pb != null);
 			System.out.print("\n");
 		}
