@@ -12,9 +12,9 @@ import java.util.Stack;
  * @author chuff
  *
  */
-public class MaxChessSequenceOfNonRepeatArray {
+public class CopyOfMaxChessSequenceOfNonRepeatArray {
 	public static void main(String[] args) {
-		new MaxChessSequenceOfNonRepeatArray().runDemo();
+		new CopyOfMaxChessSequenceOfNonRepeatArray().runDemo();
 	}
 	
 	public void runDemo() {
@@ -93,7 +93,7 @@ public class MaxChessSequenceOfNonRepeatArray {
 		int max = -1;	// size of max number sequence
 		Point maxPathStart = null;	// start point of max number sequence
 		PointBox stackPb;	// temporary variable for searching number sequence starting from each point
-		Stack<PointNonius> pathStack = new Stack<>();	// temporary variable for searching number sequence starting from each point
+		Stack<PointBox> pathStack = new Stack<>();	// temporary variable for searching number sequence starting from each point
 		
 		/**
 		 * loop all points to get the max number sequence
@@ -103,77 +103,50 @@ public class MaxChessSequenceOfNonRepeatArray {
 //				moveCount++;
 				
 				Point p = new Point(j, i);
-				PointBox pb = chessInfoMap.get(p);
+				PointBox pb = chessInfoMap.get(p),
+						tempPb;
 				
-				int pointMax = pb.getMaxDepth();
+				int pointMax = pb.getMaxDepth(),
+						lastPointMax;
 				/**
 				 * maxDepth of PointBox is -1 by default; 
 				 * otherwise, it's max number sequence has been calculated 
 				 * 			and the value could be compared with max directly
 				 */
-				if (pointMax > 0 && pointMax > max) {
-					max = pointMax;
-					maxPathStart = p;
-				} else if (pointMax <= 0) {
+				if (pointMax <= 0) {
 					/**
 					 * recursion of all the available number sequences starting from current point
 					 */
 					pathStack.clear();
-					pathStack.push(new PointNonius(pb, null, null, null, 1));	// default depth is 1, which means itself
+					tempPb = pb;
+					do {
+						moveCount++;
+						pathStack.push(tempPb);
+						
+						if (tempPb.getMaxDepth() > 0) {
+							break;
+						}
+						tempPb = tempPb.getNextPointBox();
+					} while (tempPb != null);
+					
+					moveCount++;
+					tempPb = pathStack.pop();
+					if ((lastPointMax = tempPb.getMaxDepth()) <= 0) {
+						lastPointMax = 1;
+						tempPb.setMaxDepth(1);
+					}
 					while (!pathStack.empty()) {
 						moveCount++;
-						
-						PointNonius pn = pathStack.pop();
-						stackPb = pn.pointBox;
-						int tempMax = -1,
-								tempPointMax = -1;
-						/**
-						 * if a point doesn't have adjacent points(whose number's 1 bigger) 
-						 * 		or has been processes already, current number sequence ends;
-						 * else, put all adjacent points into the stack, and add depth by 1
-						 */
-						if (stackPb.getMaxDepth() > 0 || !stackPb.hasAdjacent()) {
-							/**
-							 * compare depth of current number sequence with max so far, 
-							 * 		update it if here comes a bigger one
-							 */
-							if (stackPb.getMaxDepth() > 0) {
-								tempPointMax = stackPb.getMaxDepth() + pn.depth - 1;
-							} else {
-								tempPointMax = pn.depth;
-							}
-							
-							if (tempPointMax >  max) {
-								max = tempPointMax;
-								maxPathStart = p;
-							}
-							
-							/**
-							 * for point who doesn't have adjacent points, it's max number sequence is 1, 
-							 * 			and of course, has no direction for adjacent point
-							 */
-							pn.pointBox.setMaxDepth(1);
-							
-							/**
-							 * loop current number sequence from end to start, update max number sequence of points in it;
-							 * so the next time when they're accessed, we don't have to calculate again
-							 */
-							PointNonius tempNextPn = pn;
-							PointNonius tempPn = tempNextPn.prev;
-							while (tempPn != null) {
-								moveCount++;
-								
-								tempMax = tempPointMax - tempPn.depth + 1;
-								if (tempMax > tempPn.pointBox.getMaxDepth()) {
-									tempPn.pointBox.setMaxDepth(tempMax);
-								}
-								tempNextPn = tempPn;
-								tempPn = tempNextPn.prev;
-							}
-						} else {
-							pathStack.push(new PointNonius(stackPb.getNextPointBox(), pn, null, stackPb.getNextDirection(), pn.depth + 1));	// depth added by 1
-						}
+						pathStack.pop().setMaxDepth(++lastPointMax);
 					}
+					
+					if (lastPointMax > max) {
+						max = pointMax;
+						maxPathStart = p;
+					}
+				} else if (pointMax > max) {
+					max = pointMax;
+					maxPathStart = p;
 				}
 			}
 		}
@@ -302,27 +275,6 @@ public class MaxChessSequenceOfNonRepeatArray {
 				pb = pb.getNextPointBox();
 			} while (pb != null);
 			System.out.print("\n");
-		}
-	}
-	
-	/**
-	 * PointNonius - a nonius tool to help search the number sequence path of each point
-	 * @author chuff
-	 *
-	 */
-	private class PointNonius {
-		public PointBox pointBox;
-		public PointNonius prev;
-		public PointNonius next;
-		public Direction direction;	// direction to get to current nonius from prev
-		public int depth;	// depth of number sequence top from the start point
-		
-		public PointNonius(PointBox point, PointNonius prev, PointNonius next, Direction direction, int depth) {
-			this.pointBox = point;
-			this.prev = prev;
-//			this.next = next;
-			this.direction = direction;
-			this.depth = depth;
 		}
 	}
 }
